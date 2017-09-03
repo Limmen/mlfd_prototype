@@ -5,6 +5,9 @@ import com.github.tototoshi.csv.CSVWriter
 import java.io.File
 import DataCollector._
 
+/*
+ * Actor that coordinates writing statistics of the simulation to .csv files
+ */
 class DataCollector() extends Actor with ActorLogging {
 
   val nodeCrashesPath = "data/stats/node_crashes.csv"
@@ -14,6 +17,9 @@ class DataCollector() extends Actor with ActorLogging {
   val nodeSuspicionsPath = "data/stats/node_suspicions.csv"
   val testInfoPath = "data/stats/test_info.csv"
 
+  /*
+   * Overwrite old files in data/stats/ with csv headers
+   */
   override def preStart(): Unit = {
     val nodeCrashFile= new File(nodeCrashesPath)
     val suspectedNodesFile= new File(suspectedNodesPath)
@@ -47,6 +53,9 @@ class DataCollector() extends Actor with ActorLogging {
     testInfoWriter.close()
   }
 
+  /*
+   * receive-loop, receives different type of data and write to different .csv files
+   */
   def receive = {
     case NodeDied(row) => writePoint(nodeCrashesPath, row)
     case NumberOfSuspectedNode(row) => writePoint(suspectedNodesPath, row)
@@ -56,6 +65,9 @@ class DataCollector() extends Actor with ActorLogging {
     case SimulationInfo(row) => writePoint(testInfoPath, row)
   }
 
+  /*
+   * Write a row of data to specified csv file
+   */
   def writePoint(path : String, row : List[String]) : Unit = {
     val file = new File(path)
     val writer = CSVWriter.open(file, append=true)
@@ -72,10 +84,30 @@ object DataCollector {
     Props(new DataCollector())
   }
 
+  /*
+   * Sent by workers before they crash
+   */
   case class NodeDied (row: List[String])
+  /*
+   * Sent by supervisers for each timeout
+   */
   case class NumberOfSuspectedNode (row: List[String])
+  /*
+   * Sent by MLFD Failuredetector for each RTT data that is collected and fed into
+   * the ML model
+   */
   case class RTTData (row: List[String])
+  /*
+   * Sent by MLFD Failuredetector when making a timeout-prediciton to decide if a node
+   * is dead or not
+   */
   case class Prediction (row : List[String])
+  /*
+   * Sent by EPFD, MLFD when a node is suspected to have crashed
+   */
   case class Suspicion (row : List[String])
+  /*
+   * Sent by Main.scala when simulation is started, includes information about the simulation.
+   */
   case class SimulationInfo (row : List[String])
 }

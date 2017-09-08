@@ -37,7 +37,7 @@ class DataCollector() extends Actor with ActorLogging {
     suspectedNodesWriter.close()
 
     val rttDataWriter = CSVWriter.open(rttDataFile)
-    rttDataWriter.writeRow(List("node", "geoLocation", "rtt", "timestamp", "mean"))
+    rttDataWriter.writeRow(List("node", "rttMean", "rttStd", "geo", "rttMin", "rttMax", "bandwidth", "noCrashes", "rtt", "timestamp"))
     rttDataWriter.close()
 
     val predictionDataWriter = CSVWriter.open(predictionDataFile)

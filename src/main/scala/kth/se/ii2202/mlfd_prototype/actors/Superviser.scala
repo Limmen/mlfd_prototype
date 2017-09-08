@@ -51,7 +51,7 @@ object Superviser {
   /*
    * A worker is represented by unique actor-ref, unique id, and a geographic location
    */
-  case class WorkerEntry(actorRef: ActorRef, workerId: WorkerId, loc: GeoLoc)
+  case class WorkerEntry(actorRef: ActorRef, workerId: Integer, loc: Double, bandwidth: Double)
   /*
    * HeartBeat message
    */

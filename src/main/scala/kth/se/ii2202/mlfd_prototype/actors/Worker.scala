@@ -13,7 +13,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
  */
 class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
   crashProb: Double, collector : ActorRef, bandwidth: Double, bandwidthFactor : Double,
-  messageLossProb: Double)
+  messageLossProb: Double, pattern: Boolean)
     extends Actor with ActorLogging with Timers {
 
   private val random = new scala.util.Random(id) //Seed with nodeID
@@ -50,8 +50,12 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
    * Get simulatd delay based on randomness and geo-location
    */
   def getDelay(): FiniteDuration = {
-    val geoDelay = (geoLoc * geoFactor)
-    var bandwidthDelay = 1 * bandwidthFactor
+    var geoDelay : Double = random.nextInt(100) * geoFactor
+    var bandwidthDelay : Double = random.nextDouble * bandwidthFactor
+    if(pattern){
+      geoDelay = (geoLoc * geoFactor).toDouble
+      bandwidthDelay = 1 * bandwidthFactor
+    }
     if(bandwidth > 0)
       bandwidthDelay = ((1/bandwidth) * bandwidthFactor)
     return ((random.nextGaussian()*stdDev) + geoDelay + bandwidthDelay).millis
@@ -72,8 +76,8 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
 object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     crashProb : Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
-    messageLossProb: Double): Props = {
-    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth, bandwidthFactor, messageLossProb: Double))
+    messageLossProb: Double, pattern: Boolean): Props = {
+    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth, bandwidthFactor, messageLossProb, pattern))
   }
 
   /*

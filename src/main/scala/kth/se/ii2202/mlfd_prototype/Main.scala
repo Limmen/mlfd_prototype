@@ -62,8 +62,8 @@ object Main {
       stdDevCount=30, geoFactor=100.0, locationsCount=30, crashProb=crashProb,
       defaultStd=1000.0, bandwidthCount=10, bandwidthFactor=10000.0,
       batchSize=100, learningRate=0.00000001, regParam=0.3,
-      numIterations=10, testTimeout = 50.minutes, messageLossProb=messageLossProb,
-      stdevMargin=2)
+      numIterations=10, testTimeout = 2.minutes, messageLossProb=messageLossProb,
+      stdevMargin=2, pattern=true)
   }
 
   /*
@@ -75,7 +75,7 @@ object Main {
     epfdTest(workersCount=100, delta=500.millis, system=system,
       stdDevCount=100, geoFactor=100.0, locationsCount=100, crashProb=crashProb,
       collector=collector, bandwidthsCount=100, bandwidthFactor=1000.0,
-      hbTimeout=4.seconds, testTimeout= 10.minutes, messageLossProb=messageLossProb)
+      hbTimeout=4.seconds, testTimeout= 10.minutes, messageLossProb=messageLossProb, pattern=true)
   }
 
   /*
@@ -84,6 +84,15 @@ object Main {
    */
   def mlfdRandomCorrelationTest(system : ActorSystem, collector: ActorRef, crashProb: Double, messageLossProb: Double) : Unit = {
     println("Starting testcase: RandomCorrelationSimulation with FailureDetector: MLFD")
+    mlfdTest(
+      workersCount = 100, sampleSize = 200, defaultMean = 3000.0,
+      hbTimeout=2.seconds, system=system, collector=collector,
+      stdDevCount=30, geoFactor=100.0, locationsCount=30, crashProb=crashProb,
+      defaultStd=1000.0, bandwidthCount=10, bandwidthFactor=10000.0,
+      batchSize=100, learningRate=0.00000001, regParam=0.3,
+      numIterations=10, testTimeout = 50.minutes, messageLossProb=messageLossProb,
+      stdevMargin=2, pattern=false)
+
   }
 
   /*
@@ -118,7 +127,7 @@ object Main {
     crashProb : Double, defaultStd : Double, bandwidthCount: Integer,
     bandwidthFactor : Double, batchSize: Integer, learningRate : Double, regParam : Double,
     numIterations : Integer, testTimeout: FiniteDuration, messageLossProb : Double,
-    stdevMargin: Double) : Unit = {
+    stdevMargin: Double, pattern: Boolean) : Unit = {
 
     val loc = locations(locationsCount, workersCount)
     loc.sorted.map((l:Double) => collector ! new GeoDelay(List(l.toString, (l * geoFactor).toString)))
@@ -135,7 +144,7 @@ object Main {
     val workers = startWorkers(n=workersCount, system=system, locations=loc,
       stdDevs=stddev, geoFactor=geoFactor, crashProb=crashProb,
       collector=collector, bandwidths=bws, bandwidthFactor=bandwidthFactor,
-      messageLossProb=messageLossProb)
+      messageLossProb=messageLossProb, pattern=pattern)
 
     val mlfd = new MLFD(workers = workers, sampleWindowSize = 100,defaultMean=3000.0, collector=collector, defaultStd=defaultStd, batchSize=batchSize, learningRate=learningRate, regParam=regParam, numIterations=numIterations, stdevMargin=stdevMargin)
 
@@ -166,7 +175,7 @@ object Main {
   def epfdTest(workersCount: Integer, delta: FiniteDuration, system : ActorSystem, stdDevCount:Integer,
     geoFactor: Double, locationsCount : Integer, crashProb : Double, collector : ActorRef,
     bandwidthsCount: Integer, bandwidthFactor: Double, hbTimeout: FiniteDuration,
-    testTimeout: FiniteDuration, messageLossProb : Double) : Unit = {
+    testTimeout: FiniteDuration, messageLossProb : Double, pattern: Boolean) : Unit = {
 
     val loc = locations(locationsCount, workersCount)
     loc.map((l:Double) => collector ! new GeoDelay(List(l.toString, (l * geoFactor).toString)))
@@ -182,7 +191,7 @@ object Main {
     val workers = startWorkers(n=workersCount, system=system, locations=loc,
       stdDevs=stddev, geoFactor=geoFactor, crashProb=crashProb,
       collector=collector, bandwidths=bws, bandwidthFactor=bandwidthFactor,
-      messageLossProb=messageLossProb)
+      messageLossProb=messageLossProb, pattern=pattern)
 
     val epfd = new EPFD(workers, delta, collector, hbTimeout)
 
@@ -197,9 +206,9 @@ object Main {
   /*
    * Utility function to start a set of worker nodes on given location and with given parameters
    */
-  def startWorkers(n: Integer, system : ActorSystem, locations : List[Double], stdDevs : List[Double], geoFactor : Double, crashProb : Double, collector: ActorRef, bandwidths: List[Double], bandwidthFactor: Double, messageLossProb:Double) : List[WorkerEntry] = {
+  def startWorkers(n: Integer, system : ActorSystem, locations : List[Double], stdDevs : List[Double], geoFactor : Double, crashProb : Double, collector: ActorRef, bandwidths: List[Double], bandwidthFactor: Double, messageLossProb:Double, pattern: Boolean) : List[WorkerEntry] = {
         return (1 to n).toList.map((i) => {
-          val actorRef = system.actorOf(Worker.props(id= i, geoLoc=locations(i-1), stdDev = stdDevs(i-1), geoFactor=geoFactor, crashProb=crashProb, collector=collector, bandwidth=bandwidths(i-1), bandwidthFactor=bandwidthFactor,messageLossProb=messageLossProb), i.toString)
+          val actorRef = system.actorOf(Worker.props(id= i, geoLoc=locations(i-1), stdDev = stdDevs(i-1), geoFactor=geoFactor, crashProb=crashProb, collector=collector, bandwidth=bandwidths(i-1), bandwidthFactor=bandwidthFactor,messageLossProb=messageLossProb, pattern=pattern), i.toString)
           new WorkerEntry(actorRef, i, locations(i-1), bandwidths(i-1))
     })
   }

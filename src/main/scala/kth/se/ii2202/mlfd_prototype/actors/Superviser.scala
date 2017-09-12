@@ -30,9 +30,9 @@ class Superviser(fd : FD, timeout: FiniteDuration) extends Actor with ActorLoggi
    */
   def receive = {
     case FDTimeout => {
-      val(workers, newTimeout) = fd.timeout()
+      val workers = fd.timeout()
       workers.map((worker : WorkerEntry) => worker.actorRef ! HeartBeat)
-      timers.startSingleTimer(FDTimerKey, FDTimeout, newTimeout)
+      timers.startSingleTimer(FDTimerKey, FDTimeout, timeout)
     }
     case hbReply : HeartBeatReply => {
       fd.receivedReply(hbReply, sender)

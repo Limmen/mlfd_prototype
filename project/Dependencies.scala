@@ -13,4 +13,5 @@ object Dependencies {
   lazy val sl4jApi = "org.slf4j" % "slf4j-api" % "1.7.5"
   lazy val sl4jSimple = "org.slf4j" % "slf4j-simple" % "1.7.5"
   lazy val scalaCsv = "com.github.tototoshi" %% "scala-csv" % "1.3.5"
+  lazy val scallop = "org.rogach" %% "scallop" % "3.1.0"
 }

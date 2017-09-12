@@ -16,8 +16,9 @@ import org.apache.spark.mllib.regression.LabeledPoint
  * Failure detector that uses a machine learning model to predict failures
  */
 class MLFD(workers: List[WorkerEntry], sampleWindowSize : Integer, defaultMean: Double,
-  timeout: FiniteDuration, collector : ActorRef, defaultStd : Double,
-batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integer) extends FD {
+  collector : ActorRef, defaultStd : Double,
+  batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integer,
+stdevMargin: Double) extends FD {
 
   private val log = LogManager.getRootLogger
   private var all: Set[WorkerEntry] = Set()
@@ -25,7 +26,7 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
   private var suspected: Set[WorkerEntry] = Set()
   private val mlfdModel = new MLFDModel(batchSize = batchSize, learningRate = learningRate, regParam = regParam, numIterations=numIterations)
   private var outStandingHBs: Map[Integer, Double] = Map()
-  private var responseData: Map[Integer, ResponseData] = Map()
+  private var responseData: Map[Integer, List[Double]] = Map()
   private val formatter = new DecimalFormat("#.#######################################")
 
   init(workers)
@@ -36,13 +37,13 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
   def init(workers: List[WorkerEntry]): Unit = {
     alive = alive ++ workers
     all = all ++ workers
-    workers.map((worker: WorkerEntry) => responseData += (worker.workerId -> new ResponseData(List(), 0)))
+    workers.map((worker: WorkerEntry) => responseData += (worker.workerId -> List()))
   }
 
   /*
    * Handle  timeout, i.e analyze based on received heartbeats and ML-model which nodes should be considered dead
    */
-  def timeout(): (Set[WorkerEntry], FiniteDuration) = {
+  def timeout(): Set[WorkerEntry] = {
     val timeStamp = System.currentTimeMillis().toDouble
     log.info("Suspected nodes: " + suspected.size + " alive: " + alive.size)
     collector ! new NumberOfSuspectedNode(List(formatter.format(timeStamp), suspected.size.toString))
@@ -50,16 +51,15 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
       val mean = getMeanRespTime(worker.workerId)
       val min = getMinRespTime(worker.workerId)
       val max = getMaxRespTime(worker.workerId)
-      val epoch = getEpoch(worker.workerId)
       val sdev = stdDev(getVariance(worker.workerId))
-      val predictedTimeout = mlfdModel.predict(mean, sdev, worker.loc, min, max, worker.bandwidth, epoch)
+      val predictedTimeout = mlfdModel.predict(mean, sdev, worker.loc, min, max, worker.bandwidth)
       collector ! new Prediction(List(worker.workerId.toString, formatter.format(timeStamp), predictedTimeout.toString))
       if (!alive.contains(worker) & !suspected.contains(worker)){
         getTimeSinceHb(worker.workerId) match {
           case Some(currentTimeout) => {
-            val len = responseData(worker.workerId).responseTimes.length
+            val len = responseData(worker.workerId).length
             val workerId = worker.workerId
-            if ((predictedTimeout + sdev * 4) < currentTimeout) {
+            if ((predictedTimeout + sdev * stdevMargin) < currentTimeout) {
               val workerId = worker.workerId
               log.info(s"worker $workerId dead, predict: $predictedTimeout, current timeout: $currentTimeout")
               suspected = suspected + worker
@@ -78,7 +78,7 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
         outStandingHBs = outStandingHBs + (worker.workerId -> timeStamp)
     })
     alive = Set()
-    return (all, timeout)
+    return all
   }
 
   /*
@@ -88,13 +88,13 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
     val timeStamp = System.currentTimeMillis().toDouble
     getTimeSinceHb(hbReply.from) match {
       case Some(responseTime) => {
-        addRespTime(hbReply.from, responseTime, hbReply.epoch)
+        addRespTime(hbReply.from, responseTime)
         val mean = getMeanRespTime(hbReply.from)
         val min = getMinRespTime(hbReply.from)
         val max = getMaxRespTime(hbReply.from)
         val sdev = stdDev(getVariance(hbReply.from))
-        val dataPoint = LabeledPoint(responseTime.toDouble, Vectors.dense(mean, sdev, hbReply.loc.toDouble, min, max, hbReply.bandwidth, hbReply.epoch.toDouble))
-        collector ! new RTTData(List(hbReply.from.toString(), mean.toString(), sdev.toString(), hbReply.loc.toString, min.toString, max.toString(), hbReply.bandwidth.toString(), hbReply.epoch.toString(), responseTime.toString, formatter.format(timeStamp)))
+        val dataPoint = LabeledPoint(responseTime.toDouble, Vectors.dense(mean, sdev, hbReply.loc.toDouble, min, max, hbReply.bandwidth))
+        collector ! new RTTData(List(hbReply.from.toString(), mean.toString(), sdev.toString(), hbReply.loc.toString, min.toString, max.toString(), hbReply.bandwidth.toString(), responseTime.toString, formatter.format(timeStamp)))
         mlfdModel.addDataPoint(dataPoint)
       }
       case None => ; //Delayed response to duplicate-hb request, this is OK
@@ -122,33 +122,33 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
   /*
    * Helper function to add a rtt-sample for a given worker
    */
-  def addRespTime(workerId: Integer, responseTime: Double, epoch: Integer): Unit = {
-    var rttList = responseData(workerId).responseTimes
+  def addRespTime(workerId: Integer, responseTime: Double): Unit = {
+    var rttList = responseData(workerId)
     rttList = rttList.zipWithIndex.collect {
       case (x, i) if i < sampleWindowSize - 2 => x
     }
     rttList = responseTime :: rttList
-    responseData += (workerId -> new ResponseData(rttList, epoch))
+    responseData += (workerId -> rttList)
   }
 
   /*
    * Helper function to calculate mean-RTT for a worker based on samples
    */
   def getMeanRespTime(workerId: Integer): Double = {
-    if (responseData(workerId).responseTimes.length == 0)
+    if (responseData(workerId).length == 0)
       return defaultMean
     else
-      return responseData(workerId).responseTimes.sum / responseData(workerId).responseTimes.length
+      return responseData(workerId).sum / responseData(workerId).length
   }
 
   /*
    * Helper function to calculate variance of RTTs for a worker based on samples
    */
   def getVariance(workerId: Integer): Double = {
-    if (responseData(workerId).responseTimes.length < 2)
+    if (responseData(workerId).length < 2)
       return Math.pow(defaultStd, 2)
     val mean = getMeanRespTime(workerId)
-    val variances = responseData(workerId).responseTimes.map((respTime: Double) => Math.pow((respTime - mean), 2))
+    val variances = responseData(workerId).map((respTime: Double) => Math.pow((respTime - mean), 2))
     val variance = variances.sum / variances.length
     return variance
   }
@@ -160,23 +160,23 @@ batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integ
     Math.sqrt(variance)
   }
 
+  /*
+   * Helper function to get min resp time from samples
+   */
   def getMinRespTime(workerId: Integer): Double = {
-    if (responseData(workerId).responseTimes.length == 0)
+    if (responseData(workerId).length == 0)
       return defaultMean
     else
-      return responseData(workerId).responseTimes.min
+      return responseData(workerId).min
   }
 
+  /*
+   * Helper function to get max resp time from samples
+   */
   def getMaxRespTime(workerId: Integer): Double = {
-    if (responseData(workerId).responseTimes.length == 0)
+    if (responseData(workerId).length == 0)
       return defaultMean
     else
-      return responseData(workerId).responseTimes.max
+      return responseData(workerId).max
   }
-
-  def getEpoch(workerId: Integer): Integer = {
-    return responseData(workerId).epoch
-  }
-
-  case class ResponseData(responseTimes: List[Double], epoch: Integer)
 }

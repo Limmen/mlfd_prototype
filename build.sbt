@@ -21,6 +21,7 @@ lazy val root = (project in file(".")).
       akkaRemote,
       sl4jApi,
       sl4jSimple,
-      scalaCsv
+      scalaCsv,
+      scallop
     )
   )

@@ -24,7 +24,7 @@ import org.apache.spark.streaming.{ Seconds, StreamingContext, Time }
 class MLFDModel(batchSize : Integer, learningRate : Double, regParam: Double, numIterations : Integer) {
 
   private val log = LogManager.getRootLogger
-  private val numFeatures = 7
+  private val numFeatures = 6
   private val trainDataPath = "data/train/" //Folder where SparkStreaming will listen for new training data
   private val tempDataFile = "data/temp/temp.txt" //write individual records to temp file before moving to training folder
   private val testDataPath = "data/test/"
@@ -124,10 +124,10 @@ class MLFDModel(batchSize : Integer, learningRate : Double, regParam: Double, nu
   /*
    * Predict next timeout of process based on mean and geo-location by using the current trained model
    */
-  def predict(mean: Double, sdev: Double, geoLoc: Double, min: Double, max: Double, bandwidth: Double, epoch: Integer): Double = {
+  def predict(mean: Double, sdev: Double, geoLoc: Double, min: Double, max: Double, bandwidth: Double): Double = {
     val linearModel: LinearRegressionModel = model.latestModel()
     log.debug("Model Weights: " + linearModel.weights)
-    return linearModel.predict(Vectors.dense(mean, sdev, geoLoc, min, max, bandwidth, epoch.toDouble))
+    return linearModel.predict(Vectors.dense(mean, sdev, geoLoc, min, max, bandwidth))
   }
 
 }

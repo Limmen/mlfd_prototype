@@ -1,0 +1,5 @@
+test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,averageDetectiontime,mistakeRate
+mlfd_test,100,30,200,3000.0,4 seconds,30,100.0,0.005,nil,1000.0,10,10000.0,100,1.0E-8,0.3,10,6030.5,1.8333333333333333
+mlfd_test,100,30,200,3000.0,4 seconds,30,100.0,0.005,nil,1000.0,10,10000.0,100,1.0E-8,0.3,10,6027.5,1.7333333333333334
+mlfd_test,100,30,200,3000.0,4 seconds,30,100.0,0.005,nil,1000.0,10,10000.0,100,1.0E-8,0.3,10,0.005,2.0,5845.654545454546,0.235
+mlfd_test,100,30,200,3000.0,2 seconds,30,100.0,5.0E-4,nil,1000.0,10,10000.0,100,1.0E-8,0.3,10,5.0E-4,2.0,4111.018181818182,0.09466666666666666

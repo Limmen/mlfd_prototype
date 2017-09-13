@@ -13,14 +13,20 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
  */
 class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
   crashProb: Double, collector : ActorRef, bandwidth: Double, bandwidthFactor : Double,
-  messageLossProb: Double, pattern: Boolean)
+  messageLossProb: Double, pattern: Boolean, altGeo : Double, altBw: Double, rand: Boolean)
     extends Actor with ActorLogging with Timers {
 
   private val random = new scala.util.Random(id) //Seed with nodeID
   private val formatter = new DecimalFormat("#.#######################################")
+  private var bw : Double = bandwidth
+  private var loc : Double = geoLoc
 
   override def preStart(): Unit = {
     log.debug(s"Worker $id, geo-location: $geoLoc, bandwidth: $bandwidth started")
+    if(!pattern){
+      bw = altBw
+      loc = altGeo
+    }
   }
 
   /*
@@ -50,14 +56,20 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
    * Get simulatd delay based on randomness and geo-location
    */
   def getDelay(): FiniteDuration = {
-    var geoDelay : Double = random.nextInt(100) * geoFactor
-    var bandwidthDelay : Double = random.nextDouble * bandwidthFactor
-    if(pattern){
-      geoDelay = (geoLoc * geoFactor).toDouble
-      bandwidthDelay = 1 * bandwidthFactor
+    var geoDelay = (loc * loc * loc) * geoFactor
+    var bandwidthDelay = 1 * bandwidthFactor
+      if(bw > 0)
+        bandwidthDelay = ((1/(bw * bw * bw)) * bandwidthFactor)
+
+    if(rand){
+      val gl = random.nextInt(30)
+      geoDelay = ((gl * gl * gl) * random.nextInt(10)).toDouble
+      val bf = random.nextInt(10000)
+      val b = random.nextInt(30)
+      bandwidthDelay = (1 * bf).toDouble
+      if(b > 0)
+        bandwidthDelay = ((1/(b*b*b)) * bf).toDouble
     }
-    if(bandwidth > 0)
-      bandwidthDelay = ((1/bandwidth) * bandwidthFactor)
     return ((random.nextGaussian()*stdDev) + geoDelay + bandwidthDelay).millis
   }
 
@@ -65,7 +77,7 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
     return random.nextDouble() <= crashProb
   }
 
-  def messageLoss() : Boolean = {
+  def messageLoss( ): Boolean = {
     return random.nextDouble() <= messageLossProb
   }
 }
@@ -76,8 +88,8 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
 object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     crashProb : Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
-    messageLossProb: Double, pattern: Boolean): Props = {
-    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth, bandwidthFactor, messageLossProb, pattern))
+    messageLossProb: Double, pattern: Boolean, altGeo : Double, altBw: Double, rand : Boolean): Props = {
+    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth, bandwidthFactor, messageLossProb, pattern, altGeo, altBw, rand))
   }
 
   /*

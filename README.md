@@ -9,22 +9,19 @@
 
 ## How to run Simulations
 
-1. **Set simulation parameters in `src/main/scala/kth/se/ii2202/mlfd_prototype/Main.scala`**
+1. **Set simulation parameters in:**`src/main/scala/kth/se/ii2202/mlfd_prototype/Main.scala`
 2. **Build fat jar**
    - `$ sbt assembly`
 3. **Run as spark-job**
 ```
-$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test <testnum> --crash <crashProb> --mloss <messageLossProb>
+/home/limmen/programs/spark-2.2.0-bin-hadoop2.7/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 10 --pmargin 3 --geof 10.0 --geoc 50 --bwf 10000 --bwc 50 --pattern
 ```
 
-## Available simulations
+## Simulation parameters
 
-| Simulation                      | SimulationNum |
-| ------------------------------- | ------------- |
-| ClearCorrelationSimulationMLFD  | 1             |
-| ClearCorrelationSimulationEPFD  | 2             |
-| RandomCorrelationSimulationMLFD | 3             |
-| RandomCorrelationSimulationEPFD | 4             |
+| Parameter-name                      | Description                                    |
+| ----------------------------------- | ---------------------------------------------- |
+| test                                | Int, 1 to use MLFD, 2 to use EPFD [REQUIRED]   |
 
 Data and statistics from simulation is written to csv files in `data/stats/`.
 

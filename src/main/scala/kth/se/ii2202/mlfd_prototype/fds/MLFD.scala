@@ -15,16 +15,16 @@ import org.apache.spark.mllib.regression.LabeledPoint
 /*
  * Failure detector that uses a machine learning model to predict failures
  */
-class MLFD(workers: List[WorkerEntry], sampleWindowSize : Integer, defaultMean: Double,
-  collector : ActorRef, defaultStd : Double,
+class MLFD(workers: List[WorkerEntry], sampleWindowSize: Integer, defaultMean: Double,
+  collector: ActorRef, defaultStd: Double,
   batchSize: Integer, learningRate: Double, regParam: Double, numIterations: Integer,
-stdevMargin: Double) extends FD {
+  stdevMargin: Double) extends FD {
 
   private val log = LogManager.getRootLogger
   private var all: Set[WorkerEntry] = Set()
   private var alive: Set[WorkerEntry] = Set()
   private var suspected: Set[WorkerEntry] = Set()
-  private val mlfdModel = new MLFDModel(batchSize = batchSize, learningRate = learningRate, regParam = regParam, numIterations=numIterations)
+  private val mlfdModel = new MLFDModel(batchSize = batchSize, learningRate = learningRate, regParam = regParam, numIterations = numIterations)
   private var outStandingHBs: Map[Integer, Double] = Map()
   private var responseData: Map[Integer, List[Double]] = Map()
   private val formatter = new DecimalFormat("#.#######################################")
@@ -54,7 +54,7 @@ stdevMargin: Double) extends FD {
       val sdev = stdDev(getVariance(worker.workerId))
       val predictedTimeout = mlfdModel.predict(mean, sdev, worker.loc, min, max, worker.bandwidth)
       collector ! new Prediction(List(worker.workerId.toString, formatter.format(timeStamp), predictedTimeout.toString))
-      if (!alive.contains(worker) & !suspected.contains(worker)){
+      if (!alive.contains(worker) & !suspected.contains(worker)) {
         getTimeSinceHb(worker.workerId) match {
           case Some(currentTimeout) => {
             val len = responseData(worker.workerId).length
@@ -68,13 +68,13 @@ stdevMargin: Double) extends FD {
           }
           case None => ;
         }
-      } else if(alive.contains(worker) && suspected.contains(worker)){
+      } else if (alive.contains(worker) && suspected.contains(worker)) {
         log.debug("Detected premature crash of worker: " + worker.workerId)
         suspected = suspected - worker
       }
     })
     all.map((worker: WorkerEntry) => {
-      if(alive.contains(worker))
+      if (alive.contains(worker))
         outStandingHBs = outStandingHBs + (worker.workerId -> timeStamp)
     })
     alive = Set()

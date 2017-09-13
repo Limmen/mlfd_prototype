@@ -16,17 +16,28 @@ import kth.se.ii2202.mlfd_prototype.fds._
  */
 class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
   val test = opt[Int](required = true)
-  val crash = opt[Double](required=true)
-  val mloss = opt[Double](required=true)
-  val sdev = opt[Double](required=true)
-  val pattern = opt[Boolean](required=true)
-  val geof = opt[Double](required=true)
-  val geoc = opt[Int](required=true)
-  val bwf = opt[Double](required=true)
-  val bwc = opt[Int](required=true)
-  val rand = opt[Boolean](required=true)
+  val crash = opt[Double](required = true)
+  val mloss = opt[Double](required = true)
+  val sdev = opt[Double](required = true)
+  val pattern = opt[Boolean](required = true)
+  val geof = opt[Double](required = true)
+  val geoc = opt[Int](required = true)
+  val bwf = opt[Double](required = true)
+  val bwc = opt[Int](required = true)
+  val rand = opt[Boolean](required = true)
   val delta = opt[Double]()
   val pmargin = opt[Double]()
+  val workers = opt[Int](required = true)
+  val sdevc = opt[Int](required = true)
+  val hbtimeout = opt[Double](required = true)
+  val testdur = opt[Double](required = true)
+  val samplew = opt[Int]()
+  val defaultmean = opt[Double]()
+  val defaultsdev = opt[Double]()
+  val learnrate = opt[Double]()
+  val regp = opt[Double]()
+  val iter = opt[Int]()
+  val batchsize = opt[Int]()
   verify()
 }
 
@@ -47,6 +58,9 @@ object Main {
 
     val collector = system.actorOf(DataCollector.props, "dataCollector")
 
+    /*
+     * Read command line arguments and start testcase
+     */
     val crashProb = conf.crash()
     val messageLossProb = conf.mloss()
     val sdev = conf.sdev()
@@ -57,41 +71,68 @@ object Main {
     val bwc = conf.bwc()
     val rand = conf.rand()
     val test = conf.test()
+    val workers = conf.workers()
+    val sdevc = conf.sdevc()
+    val hbtimeout = conf.hbtimeout()
+    val testdur = conf.testdur()
     test match {
-      case 1 => val pmargin = conf.pmargin(); mlfdClearCorrelationSimulation(system: ActorSystem, collector: ActorRef, crashProb, messageLossProb, pmargin, sdev, pattern, geof, geoc, bwf, bwc, rand)
-      case 2 => val delta = conf.delta(); epfdClearCorrelationTest(system: ActorSystem, collector: ActorRef, crashProb, messageLossProb, delta, sdev, pattern, geof, geoc, bwf, bwc, rand)
+      case 1 => {
+        val pmargin = conf.pmargin()
+        val samplew = conf.samplew()
+        val defaultmean = conf.defaultmean()
+        val defaultsdev = conf.defaultsdev()
+        val learnrate = conf.learnrate()
+        val regp = conf.regp()
+        val iter = conf.iter()
+        val batchsize = conf.batchsize()
+        mlfdClearCorrelationSimulation(system = system, collector = collector, crashProb = crashProb,
+          messageLossProb = messageLossProb, predictionMargin = pmargin, stdevFactor = sdev,
+          pattern = pattern, geof = geof, geoc = geoc, bwf = bwf, bwc = bwc, rand = rand, workersCount = workers,
+          sdevc = sdevc, hbtimeout = hbtimeout, testdur = testdur, samplew = samplew, defaultmean = defaultmean,
+          defaultsdev = defaultsdev, learnrate = learnrate, regp = regp, iter = iter, batchsize = batchsize)
+      }
+      case 2 => {
+        val delta = conf.delta()
+        epfdClearCorrelationTest(system = system, collector = collector, crashProb = crashProb, messageLossProb = messageLossProb,
+          delta = delta, stdevFactor = sdev, pattern = pattern, geof = geof, geoc = geoc, bwf = bwf, bwc = bwc, rand = rand,
+          workersCount = workers, sdevc = sdevc, hbtimeout = hbtimeout, testdur = testdur)
+      }
     }
-
   }
 
   /*
    * Simulation where there is a clear correlation between geo-graphic location, bandwidth etc and RTT
    * Uses MLFD
    */
-  def mlfdClearCorrelationSimulation(system : ActorSystem, collector: ActorRef, crashProb: Double, messageLossProb: Double, predictionMargin: Double,
-    stdevFactor : Double, pattern: Boolean, geof: Double, geoc: Integer, bwf : Double, bwc : Integer, rand : Boolean) : Unit = {
-    println("Starting testcase: ClearCorrelationSimulation with FailureDetector: MLFD")
+  def mlfdClearCorrelationSimulation(system: ActorSystem, collector: ActorRef, crashProb: Double, messageLossProb: Double,
+    predictionMargin: Double, stdevFactor: Double, pattern: Boolean, geof: Double, geoc: Integer,
+    bwf: Double, bwc: Integer, rand: Boolean, workersCount: Integer, sdevc: Integer, hbtimeout: Double,
+    testdur: Double, samplew: Integer, defaultmean: Double, defaultsdev: Double, learnrate: Double,
+    regp: Double, iter: Integer, batchsize: Integer): Unit = {
+    println("Starting testcase with FailureDetector MLFD")
     mlfdTest(
-      workersCount = 100, sampleSize = 200, defaultMean = 3000.0,
-      hbTimeout=2.seconds, system=system, collector=collector,
-      stdDevCount=30, geoFactor=geof, locationsCount=geoc, crashProb=crashProb,
-      defaultStd=1000.0, bandwidthCount=bwc, bandwidthFactor=bwf,
-      batchSize=100, learningRate=0.0000000001, regParam=0.3,
-      numIterations=10, testTimeout = 30.minutes, messageLossProb=messageLossProb,
-      stdevMargin=predictionMargin, pattern=pattern, stdevFactor=stdevFactor, rand=rand)
+      workersCount = workersCount, sampleSize = samplew, defaultMean = defaultmean,
+      hbTimeout = hbtimeout.seconds, system = system, collector = collector,
+      stdDevCount = sdevc, geoFactor = geof, locationsCount = geoc, crashProb = crashProb,
+      defaultStd = defaultsdev, bandwidthCount = bwc, bandwidthFactor = bwf,
+      batchSize = batchsize, learningRate = learnrate, regParam = regp,
+      numIterations = iter, testTimeout = testdur.minutes, messageLossProb = messageLossProb,
+      stdevMargin = predictionMargin, pattern = pattern, stdevFactor = stdevFactor, rand = rand
+    )
   }
 
   /*
    * Simulation where there is a clear correlation between geo-graphic location, bandwidth etc and RTT
    * Uses EPFD
    */
-  def epfdClearCorrelationTest(system : ActorSystem, collector: ActorRef, crashProb: Double, messageLossProb: Double, delta: Double,
-    stdevFactor : Double, pattern: Boolean, geof: Double, geoc: Integer, bwf : Double, bwc : Integer, rand : Boolean) : Unit = {
-    println("Starting testcase: ClearCorrelationSimulation with FailureDetector: EPFD")
-    epfdTest(workersCount=100, delta=delta.millis, system=system,
-      stdDevCount=100, geoFactor=geof, locationsCount=geoc, crashProb=crashProb,
-      collector=collector, bandwidthsCount=bwc, bandwidthFactor=bwf,
-      hbTimeout=4.seconds, testTimeout= 30.minutes, messageLossProb=messageLossProb, pattern=pattern, stdevFactor = stdevFactor, rand = rand)
+  def epfdClearCorrelationTest(system: ActorSystem, collector: ActorRef, crashProb: Double, messageLossProb: Double, delta: Double,
+    stdevFactor: Double, pattern: Boolean, geof: Double, geoc: Integer, bwf: Double, bwc: Integer, rand: Boolean, workersCount: Integer, sdevc: Integer, hbtimeout: Double, testdur: Double): Unit = {
+    println("Starting testcase with FailureDetector EPFD")
+    epfdTest(workersCount = workersCount, delta = delta.millis, system = system,
+      stdDevCount = sdevc, geoFactor = geof, locationsCount = geoc, crashProb = crashProb,
+      collector = collector, bandwidthsCount = bwc, bandwidthFactor = bwf,
+      hbTimeout = hbtimeout.seconds, testTimeout = testdur.minutes,
+      messageLossProb = messageLossProb, pattern = pattern, stdevFactor = stdevFactor, rand = rand)
   }
 
   /*
@@ -110,42 +151,43 @@ object Main {
    * - bandwidthCount: how many simulated type of bandwidths
    * - bandwidthFactor: how much does the bandwidth affect the RTT
    * - testTimeout: duration of the test
+   * - messageLossprob: Probability of message loss for each heartbeat reply
+   * - stdevMargin: The number of standard-deviations used by MLFD as a margin for predictions
+   * - pattern: True if geolocation and bandwidth should correlate with RTT delays
+   * - stdevFactor: Standard deviation factor to multiply each class of standard deviation in the simulation
+   * - rand: True if RTT-delay should be completely random instead of following a gaussian distribution
    */
   def mlfdTest(workersCount: Integer, sampleSize: Integer, defaultMean: Double,
-    hbTimeout: FiniteDuration, system : ActorSystem, collector: ActorRef,
-    stdDevCount:Integer, geoFactor: Double, locationsCount : Integer,
-    crashProb : Double, defaultStd : Double, bandwidthCount: Integer,
-    bandwidthFactor : Double, batchSize: Integer, learningRate : Double, regParam : Double,
-    numIterations : Integer, testTimeout: FiniteDuration, messageLossProb : Double,
-    stdevMargin: Double, pattern: Boolean, stdevFactor : Double, rand: Boolean) : Unit = {
+    hbTimeout: FiniteDuration, system: ActorSystem, collector: ActorRef,
+    stdDevCount: Integer, geoFactor: Double, locationsCount: Integer,
+    crashProb: Double, defaultStd: Double, bandwidthCount: Integer,
+    bandwidthFactor: Double, batchSize: Integer, learningRate: Double, regParam: Double,
+    numIterations: Integer, testTimeout: FiniteDuration, messageLossProb: Double,
+    stdevMargin: Double, pattern: Boolean, stdevFactor: Double, rand: Boolean): Unit = {
 
-    val loc = locations(locationsCount, workersCount)
-    loc.sorted.map((l:Double) => collector ! new GeoDelay(List(l.toString, (l * geoFactor).toString)))
-    val bws = bandwidths(bandwidthCount, workersCount)
-    bws.sorted.map((bw:Double) => {
-      var bandwidthDelay = 1 * bandwidthFactor
-      if(bw > 0)
-        bandwidthDelay = ((1/bw) * bandwidthFactor)
-      collector ! new BandwidthDelay(List(bw.toString, bandwidthDelay.toString))
-    })
-    val stddev=standardDevs(stdDevCount, workersCount, stdevFactor)
-    stddev.sorted.map((stddev:Double) => collector ! new Stdev(List(stddev.toString)))
+    val loc = recordGeoDistribution(locationsCount, workersCount, rand, geoFactor, collector)
+    val bws = recordBwDistribution(bandwidthCount, workersCount, rand, bandwidthFactor, collector)
+    val stddev = recordStdevDistribution(stdDevCount, workersCount, rand, stdevFactor, collector)
+    val workers = startWorkers(n = workersCount, system = system, locations = loc,
+      stdDevs = stddev, geoFactor = geoFactor, crashProb = crashProb,
+      collector = collector, bandwidths = bws, bandwidthFactor = bandwidthFactor,
+      messageLossProb = messageLossProb, pattern = pattern,
+      altGeo = random.shuffle(loc), altBw = random.shuffle(bws), rand,
+      bandwidthCount = bandwidthCount, geoCount = locationsCount)
 
-    val workers = startWorkers(n=workersCount, system=system, locations=loc,
-      stdDevs=stddev, geoFactor=geoFactor, crashProb=crashProb,
-      collector=collector, bandwidths=bws, bandwidthFactor=bandwidthFactor,
-      messageLossProb=messageLossProb, pattern=pattern, altGeo = random.shuffle(loc), altBw = random.shuffle(bws), rand)
-
-    val mlfd = new MLFD(workers = workers, sampleWindowSize = 100,defaultMean=3000.0, collector=collector, defaultStd=defaultStd, batchSize=batchSize, learningRate=learningRate, regParam=regParam, numIterations=numIterations, stdevMargin=stdevMargin)
+    val mlfd = new MLFD(workers = workers, sampleWindowSize = 100, defaultMean = 3000.0,
+      collector = collector, defaultStd = defaultStd, batchSize = batchSize, learningRate = learningRate,
+      regParam = regParam, numIterations = numIterations, stdevMargin = stdevMargin)
 
     val superviser = system.actorOf(Superviser.props(mlfd, hbTimeout), "superviser")
 
-    system.actorOf(Controller.props(system, testTimeout, List("mlfd_test", workersCount.toString(), locationsCount.toString(), sampleSize.toString(),
-      defaultMean.toString(), hbTimeout.toString(), stdDevCount.toString(), geoFactor.toString(),
-      crashProb.toString,"nil", defaultStd.toString, bandwidthCount.toString, bandwidthFactor.toString,
-      batchSize.toString, learningRate.toString, regParam.toString, numIterations.toString(), messageLossProb.toString, stdevMargin.toString, stdevFactor.toString, pattern.toString, rand.toString)), "controller")
+    system.actorOf(Controller.props(system, testTimeout, List("mlfd_test", workersCount.toString(),
+      locationsCount.toString(), sampleSize.toString(), defaultMean.toString(), hbTimeout.toString(),
+      stdDevCount.toString(), geoFactor.toString(), crashProb.toString, "nil", defaultStd.toString,
+      bandwidthCount.toString, bandwidthFactor.toString, batchSize.toString, learningRate.toString,
+      regParam.toString, numIterations.toString(), messageLossProb.toString, stdevMargin.toString,
+      stdevFactor.toString, pattern.toString, rand.toString)), "controller")
   }
-
 
   /*
    * Perform test/simulation with the EPFD failure detector and a bunch of tunable parameters:
@@ -161,53 +203,58 @@ object Main {
    * - bandwidthFactor: how much does the bandwidth affect the RTT
    * - hbTimeout: static periodic heartbeat that is sent by the failure detector
    * - testTimeout: duration of the test
+   * - testTimeout: duration of the test
+   * - messageLossprob: Probability of message loss for each heartbeat reply
+   * - stdevMargin: The number of standard-deviations used by MLFD as a margin for predictions
+   * - pattern: True if geolocation and bandwidth should correlate with RTT delays
+   * - stdevFactor: Standard deviation factor to multiply each class of standard deviation in the simulation
+   * - rand: True if RTT-delay should be completely random instead of following a gaussian distribution
    */
-  def epfdTest(workersCount: Integer, delta: FiniteDuration, system : ActorSystem, stdDevCount:Integer,
-    geoFactor: Double, locationsCount : Integer, crashProb : Double, collector : ActorRef,
+  def epfdTest(workersCount: Integer, delta: FiniteDuration, system: ActorSystem, stdDevCount: Integer,
+    geoFactor: Double, locationsCount: Integer, crashProb: Double, collector: ActorRef,
     bandwidthsCount: Integer, bandwidthFactor: Double, hbTimeout: FiniteDuration,
-    testTimeout: FiniteDuration, messageLossProb : Double, pattern: Boolean, stdevFactor : Double, rand: Boolean) : Unit = {
+    testTimeout: FiniteDuration, messageLossProb: Double, pattern: Boolean,
+    stdevFactor: Double, rand: Boolean): Unit = {
 
-    val loc = locations(locationsCount, workersCount)
-    loc.map((l:Double) => collector ! new GeoDelay(List(l.toString, (l * geoFactor).toString)))
-    val bws = bandwidths(bandwidthsCount, workersCount)
-    bws.map((bw:Double) => {
-      var bandwidthDelay = 1 * bandwidthFactor
-      if(bw > 0)
-        bandwidthDelay = ((1/bw) * bandwidthFactor)
-      collector ! new BandwidthDelay(List(bw.toString, bandwidthDelay.toString))
-    })
-    val stddev=standardDevs(stdDevCount, workersCount, stdevFactor)
-    stddev.map((stddev:Double) => collector ! new Stdev(List(stddev.toString)))
-    val workers = startWorkers(n=workersCount, system=system, locations=loc,
-      stdDevs=stddev, geoFactor=geoFactor, crashProb=crashProb,
-      collector=collector, bandwidths=bws, bandwidthFactor=bandwidthFactor,
-      messageLossProb=messageLossProb, pattern=pattern, altGeo = random.shuffle(loc), altBw = random.shuffle(bws), random=rand)
+    val loc = recordGeoDistribution(locationsCount, workersCount, rand, geoFactor, collector)
+    val bws = recordBwDistribution(bandwidthsCount, workersCount, rand, bandwidthFactor, collector)
+    val stddev = recordStdevDistribution(stdDevCount, workersCount, rand, stdevFactor, collector)
+    val workers = startWorkers(n = workersCount, system = system, locations = loc,
+      stdDevs = stddev, geoFactor = geoFactor, crashProb = crashProb,
+      collector = collector, bandwidths = bws, bandwidthFactor = bandwidthFactor,
+      messageLossProb = messageLossProb, pattern = pattern,
+      altGeo = random.shuffle(loc), altBw = random.shuffle(bws), random = rand,
+      bandwidthCount = bandwidthsCount, geoCount = locationsCount)
 
     val epfd = new EPFD(workers, delta, collector, hbTimeout)
 
     val superviser = system.actorOf(Superviser.props(epfd, hbTimeout), "superviser")
 
-    system.actorOf(Controller.props(system, testTimeout, List("epfd_test", workersCount.toString(), locationsCount.toString, "nil", "nil",
-      hbTimeout.toString(), stdDevCount.toString(), geoFactor.toString(), crashProb.toString(), delta.toString(),
-      "nil", bandwidthsCount.toString(), bandwidthFactor.toString, "nil", "nil", "nil", "nil", messageLossProb.toString, "nil", stdevFactor.toString, pattern.toString, rand.toString)), "controller")
+    system.actorOf(Controller.props(system, testTimeout, List("epfd_test", workersCount.toString(),
+      locationsCount.toString, "nil", "nil", hbTimeout.toString(), stdDevCount.toString(),
+      geoFactor.toString(), crashProb.toString(), delta.toString(), "nil",
+      bandwidthsCount.toString(), bandwidthFactor.toString, "nil", "nil", "nil", "nil",
+      messageLossProb.toString, "nil", stdevFactor.toString, pattern.toString, rand.toString)), "controller")
   }
-
 
   /*
    * Utility function to start a set of worker nodes on given location and with given parameters
    */
-  def startWorkers(n: Integer, system : ActorSystem, locations : List[Double], stdDevs : List[Double], geoFactor : Double, crashProb : Double, collector: ActorRef, bandwidths: List[Double], bandwidthFactor: Double, messageLossProb:Double, pattern: Boolean, altGeo : List[Double], altBw: List[Double], random: Boolean) : List[WorkerEntry] = {
-        return (1 to n).toList.map((i) => {
-          val actorRef = system.actorOf(Worker.props(id= i, geoLoc=locations(i-1), stdDev = stdDevs(i-1), geoFactor=geoFactor, crashProb=crashProb, collector=collector, bandwidth=bandwidths(i-1), bandwidthFactor=bandwidthFactor,messageLossProb=messageLossProb, pattern=pattern, altGeo = altGeo(i-1), altBw = altBw(i-1), random), i.toString)
-          new WorkerEntry(actorRef, i, locations(i-1), bandwidths(i-1))
+  def startWorkers(n: Integer, system: ActorSystem, locations: List[Double], stdDevs: List[Double],
+    geoFactor: Double, crashProb: Double, collector: ActorRef, bandwidths: List[Double], bandwidthFactor: Double,
+    messageLossProb: Double, pattern: Boolean, altGeo: List[Double],
+    altBw: List[Double], random: Boolean, bandwidthCount: Integer, geoCount: Integer): List[WorkerEntry] = {
+    return (1 to n).toList.map((i) => {
+      val actorRef = system.actorOf(Worker.props(id = i, geoLoc = locations(i - 1), stdDev = stdDevs(i - 1), geoFactor = geoFactor, crashProb = crashProb, collector = collector, bandwidth = bandwidths(i - 1), bandwidthFactor = bandwidthFactor, messageLossProb = messageLossProb, pattern = pattern, altGeo = altGeo(i - 1), altBw = altBw(i - 1), random, bandwidthCount = bandwidthCount, geoCount = geoCount), i.toString)
+      new WorkerEntry(actorRef, i, locations(i - 1), bandwidths(i - 1))
     })
   }
 
   /*
    * Utility function for associating each worker with a location given how many locations and how many workers
    */
-  def locations(numLocations : Integer, numWorkers : Integer) : List[Double] = {
-    var locations : List[Double] = List()
+  def locations(numLocations: Integer, numWorkers: Integer): List[Double] = {
+    var locations: List[Double] = List()
     for (i <- 1 to numWorkers) {
       val loc = (i % numLocations).toDouble
       locations = loc :: locations
@@ -218,8 +265,8 @@ object Main {
   /*
    * Utility function for associating each worker with a bandwidth, given how many type of bandwiths and how many workers.
    */
-  def bandwidths(numBandwidths : Integer, numWorkers : Integer) : List[Double] = {
-    var bandwidths : List[Double] = List()
+  def bandwidths(numBandwidths: Integer, numWorkers: Integer): List[Double] = {
+    var bandwidths: List[Double] = List()
     for (i <- 1 to numWorkers) {
       val bandwidth = (i % numBandwidths).toDouble
       bandwidths = bandwidth :: bandwidths
@@ -230,12 +277,60 @@ object Main {
   /*
    * Utility function for associating each worker with a standard-deviation, given how many type of standard-deviations and how many workers.
    */
-  def standardDevs(numStandardDevs : Integer, numWorkers : Integer, stdevFactor : Double) : List[Double] = {
-    var standardDevs : List[Double] = List()
+  def standardDevs(numStandardDevs: Integer, numWorkers: Integer, stdevFactor: Double): List[Double] = {
+    var standardDevs: List[Double] = List()
     for (i <- 1 to numWorkers) {
-      val stdDev = (((i % numStandardDevs).toDouble)+1)*stdevFactor
+      val stdDev = (((i % numStandardDevs).toDouble) + 1) * stdevFactor
       standardDevs = stdDev :: standardDevs
     }
     return random.shuffle(standardDevs)
+  }
+
+  /*
+   * Write Distribution of geographic delay to file for later analysis
+   */
+  def recordGeoDistribution(locationsCount: Integer, workersCount: Integer, rand: Boolean,
+    geoFactor: Double, collector: ActorRef): List[Double] = {
+    val loc = locations(locationsCount, workersCount)
+    loc.map((l: Double) => {
+      var geoDelay = scala.math.pow(l, 3) * geoFactor
+      if (rand) {
+        val gl = random.nextInt(locationsCount)
+        geoDelay = (scala.math.pow(gl.toDouble, 3) * random.nextInt(geoFactor.toInt)).toDouble
+      }
+      collector ! new GeoDelay(List(l.toString, (l * geoFactor).toString))
+    })
+    return loc
+  }
+
+  /*
+   * Write Distribution of bandwidth delay to file for later analysis
+   */
+  def recordBwDistribution(bandwidthsCount: Integer, workersCount: Integer, rand: Boolean, bandwidthFactor: Double, collector: ActorRef): List[Double] = {
+    val bws = bandwidths(bandwidthsCount, workersCount)
+    bws.map((bw: Double) => {
+      var bandwidthDelay = 1 * bandwidthFactor
+      if (bw > 0)
+        bandwidthDelay = ((1 / (scala.math.pow(bw, 3))) * bandwidthFactor)
+      if (rand) {
+        val bf = random.nextInt(10000)
+        val b = random.nextInt(30)
+        bandwidthDelay = (1 * bf).toDouble
+        if (b > 0)
+          bandwidthDelay = ((1 / (scala.math.pow(b.toDouble, 3)) * bf)).toDouble
+      }
+      collector ! new BandwidthDelay(List(bw.toString, bandwidthDelay.toString))
+    })
+    return bws
+  }
+
+  /*
+   * Write Distribution of standard deviations to file for later analysis
+   */
+  def recordStdevDistribution(stdDevCount: Integer, workersCount: Integer, rand: Boolean,
+    stdevFactor: Double, collector: ActorRef): List[Double] = {
+    val stddev = standardDevs(stdDevCount, workersCount, stdevFactor)
+    stddev.map((stddev: Double) => collector ! new Stdev(List(stddev.toString)))
+    return stddev
   }
 }

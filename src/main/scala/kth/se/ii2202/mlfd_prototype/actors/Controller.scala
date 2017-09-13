@@ -77,22 +77,22 @@ class Controller(system: ActorSystem, timeout: FiniteDuration, simInfo: List[Str
       val falseSuspicionsTime = crashCount(falseSuspicions)
       val averageDetectionTime = calculateAverageDetectionTime(detectionTimes)
       val mistakeRate = calculateMistakeRate(falseSuspicions, timeout.toSeconds.toDouble)
-      var writer = CSVWriter.open(nodeDetectionsFile, append=true)
+      var writer = CSVWriter.open(nodeDetectionsFile, append = true)
       writer.writeAll(detections)
       writer.close()
-      writer = CSVWriter.open(nodeDetectionTimesFile, append=true)
+      writer = CSVWriter.open(nodeDetectionTimesFile, append = true)
       writer.writeAll(detectionTimes)
       writer.close()
-      writer = CSVWriter.open(nodeFalseSuspicionsFile, append=true)
+      writer = CSVWriter.open(nodeFalseSuspicionsFile, append = true)
       writer.writeAll(falseSuspicions)
       writer.close()
-      writer = CSVWriter.open(nodeCrashCountFile, append=true)
+      writer = CSVWriter.open(nodeCrashCountFile, append = true)
       writer.writeAll(crashedNodes)
       writer.close()
-      writer = CSVWriter.open(nodeFalseSuspicionCountFile, append=true)
+      writer = CSVWriter.open(nodeFalseSuspicionCountFile, append = true)
       writer.writeAll(falseSuspicionsTime)
       writer.close()
-      writer = CSVWriter.open(testInfoFile, append=true)
+      writer = CSVWriter.open(testInfoFile, append = true)
       writer.writeRow(simInfo :+ averageDetectionTime.toString :+ mistakeRate.toString)
       writer.close()
 
@@ -181,22 +181,23 @@ object Controller {
   def crashCount(crashData: List[List[String]]): List[List[String]] = {
     crashData.map((line: List[String]) => {
       val timestamp = line(1)
-      val count :Integer = crashData.foldLeft(0 : Integer) {(c, line) => {
-        if(line(1).toDouble <= timestamp.toDouble)
-          c + 1
-        else
-          c
-      }
+      val count: Integer = crashData.foldLeft(0: Integer) { (c, line) =>
+        {
+          if (line(1).toDouble <= timestamp.toDouble)
+            c + 1
+          else
+            c
+        }
       }
       List(timestamp, count.toString)
     })
   }
 
-  def calculateAverageDetectionTime(detectionTimes: List[List[String]]) : Double = {
-    return detectionTimes.map((line: List[String]) => line(1).toDouble).sum/detectionTimes.length
+  def calculateAverageDetectionTime(detectionTimes: List[List[String]]): Double = {
+    return detectionTimes.map((line: List[String]) => line(1).toDouble).sum / detectionTimes.length
   }
 
-  def calculateMistakeRate(mistakes: List[List[String]], simulationTime: Double) : Double = {
-    return mistakes.length/simulationTime
+  def calculateMistakeRate(mistakes: List[List[String]], simulationTime: Double): Double = {
+    return mistakes.length / simulationTime
   }
 }

@@ -24,10 +24,10 @@ class DataCollector() extends Actor with ActorLogging {
    * Overwrite old files in data/stats/ with csv headers
    */
   override def preStart(): Unit = {
-    val nodeCrashFile= new File(nodeCrashesPath)
-    val suspectedNodesFile= new File(suspectedNodesPath)
-    val rttDataFile= new File(rttDataPath)
-    val predictionDataFile= new File(predictionDataPath)
+    val nodeCrashFile = new File(nodeCrashesPath)
+    val suspectedNodesFile = new File(suspectedNodesPath)
+    val rttDataFile = new File(rttDataPath)
+    val predictionDataFile = new File(predictionDataPath)
     val nodeSuspicionsFile = new File(nodeSuspicionsPath)
     val testInfoFile = new File(testInfoPath)
     val bandwidthDelayFile = new File(bandwidthDelayPath)
@@ -84,9 +84,9 @@ class DataCollector() extends Actor with ActorLogging {
   /*
    * Write a row of data to specified csv file
    */
-  def writePoint(path : String, row : List[String]) : Unit = {
+  def writePoint(path: String, row: List[String]): Unit = {
     val file = new File(path)
-    val writer = CSVWriter.open(file, append=true)
+    val writer = CSVWriter.open(file, append = true)
     writer.writeRow(row)
     writer.close()
   }
@@ -103,27 +103,27 @@ object DataCollector {
   /*
    * Sent by workers before they crash
    */
-  case class NodeDied (row: List[String])
+  case class NodeDied(row: List[String])
   /*
    * Sent by supervisers for each timeout
    */
-  case class NumberOfSuspectedNode (row: List[String])
+  case class NumberOfSuspectedNode(row: List[String])
   /*
    * Sent by MLFD Failuredetector for each RTT data that is collected and fed into
    * the ML model
    */
-  case class RTTData (row: List[String])
+  case class RTTData(row: List[String])
   /*
    * Sent by MLFD Failuredetector when making a timeout-prediciton to decide if a node
    * is dead or not
    */
-  case class Prediction (row : List[String])
+  case class Prediction(row: List[String])
   /*
    * Sent by EPFD, MLFD when a node is suspected to have crashed
    */
-  case class Suspicion (row : List[String])
+  case class Suspicion(row: List[String])
 
-  case class BandwidthDelay (row : List[String])
-  case class GeoDelay (row : List[String])
-  case class Stdev (row : List[String])
+  case class BandwidthDelay(row: List[String])
+  case class GeoDelay(row: List[String])
+  case class Stdev(row: List[String])
 }

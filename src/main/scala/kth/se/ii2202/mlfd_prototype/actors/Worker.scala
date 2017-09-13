@@ -11,19 +11,20 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 /*
  * Worker, this actor will respond to hearbeats with simulated geographic delay and simulated network delay and also will simulate probability of crashes
  */
-class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
-  crashProb: Double, collector : ActorRef, bandwidth: Double, bandwidthFactor : Double,
-  messageLossProb: Double, pattern: Boolean, altGeo : Double, altBw: Double, rand: Boolean)
-    extends Actor with ActorLogging with Timers {
+class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
+  crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
+  messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double, rand: Boolean,
+  bandwidthCount: Integer, geoCount: Integer)
+  extends Actor with ActorLogging with Timers {
 
   private val random = new scala.util.Random(id) //Seed with nodeID
   private val formatter = new DecimalFormat("#.#######################################")
-  private var bw : Double = bandwidth
-  private var loc : Double = geoLoc
+  private var bw: Double = bandwidth
+  private var loc: Double = geoLoc
 
   override def preStart(): Unit = {
     log.debug(s"Worker $id, geo-location: $geoLoc, bandwidth: $bandwidth started")
-    if(!pattern){
+    if (!pattern) {
       bw = altBw
       loc = altGeo
     }
@@ -36,19 +37,18 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
   def receive = {
     case HeartBeat => {
       log.debug("Worker received heartbeat")
-      if(crash()){
+      if (crash()) {
         val timeStamp = System.currentTimeMillis().toDouble
         collector ! new NodeDied(List(id.toString(), formatter.format(timeStamp)))
         context.stop(self)
         log.info("worker: " + id + "crashed")
-      }
-      else if(!messageLoss()){
-        if(!timers.isTimerActive(ReplyDelayTimeoutKey))
+      } else if (!messageLoss()) {
+        if (!timers.isTimerActive(ReplyDelayTimeoutKey))
           timers.startSingleTimer(ReplyDelayTimeoutKey, ReplyDelayTimeout(sender), getDelay)
       }
     }
     case ReplyDelayTimeout(from) => {
-        from ! new HeartBeatReply(id, geoLoc, bandwidth)
+      from ! new HeartBeatReply(id, geoLoc, bandwidth)
     }
   }
 
@@ -58,26 +58,33 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
   def getDelay(): FiniteDuration = {
     var geoDelay = (loc * loc * loc) * geoFactor
     var bandwidthDelay = 1 * bandwidthFactor
-      if(bw > 0)
-        bandwidthDelay = ((1/(bw * bw * bw)) * bandwidthFactor)
+    if (bw > 0)
+      bandwidthDelay = (1 / (scala.math.pow(bw, 3)) * bandwidthFactor)
 
-    if(rand){
-      val gl = random.nextInt(30)
-      geoDelay = ((gl * gl * gl) * random.nextInt(10)).toDouble
-      val bf = random.nextInt(10000)
-      val b = random.nextInt(30)
+    if (rand) {
+      val gl = random.nextInt(geoCount)
+      geoDelay = (scala.math.pow(gl.toDouble, 3) * random.nextInt(geoFactor.toInt)).toDouble
+      val bf = random.nextInt(bandwidthFactor.toInt)
+      val b = random.nextInt(bandwidthCount)
       bandwidthDelay = (1 * bf).toDouble
-      if(b > 0)
-        bandwidthDelay = ((1/(b*b*b)) * bf).toDouble
+      if (b > 0)
+        bandwidthDelay = ((1 / scala.math.pow(b.toDouble, 3)) * bf).toDouble
     }
-    return ((random.nextGaussian()*stdDev) + geoDelay + bandwidthDelay).millis
+
+    return ((random.nextGaussian() * stdDev) + geoDelay + bandwidthDelay).millis
   }
 
-  def crash() : Boolean = {
+  /*
+   * Simulate probability of crash
+   */
+  def crash(): Boolean = {
     return random.nextDouble() <= crashProb
   }
 
-  def messageLoss( ): Boolean = {
+  /*
+   * Simulate probability of message loss
+   */
+  def messageLoss(): Boolean = {
     return random.nextDouble() <= messageLossProb
   }
 }
@@ -87,9 +94,12 @@ class Worker(id: Integer, geoLoc: Double, stdDev : Double, geoFactor : Double,
  */
 object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
-    crashProb : Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
-    messageLossProb: Double, pattern: Boolean, altGeo : Double, altBw: Double, rand : Boolean): Props = {
-    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth, bandwidthFactor, messageLossProb, pattern, altGeo, altBw, rand))
+    crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
+    messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
+    rand: Boolean, bandwidthCount: Integer, geoCount: Integer): Props = {
+    Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth,
+      bandwidthFactor, messageLossProb, pattern, altGeo, altBw, rand, bandwidthCount,
+    geoCount))
   }
 
   /*

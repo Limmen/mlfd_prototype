@@ -18,14 +18,14 @@ import kth.se.ii2202.mlfd_prototype.actors.DataCollector._
  * - Lus Rodrigues
  *
  */
-class EPFD(workers: List[WorkerEntry], delta : FiniteDuration, collector: ActorRef, timeout: FiniteDuration) extends FD {
+class EPFD(workers: List[WorkerEntry], delta: FiniteDuration, collector: ActorRef, timeout: FiniteDuration) extends FD {
 
   private var all: Set[WorkerEntry] = Set()
   private var alive: Set[WorkerEntry] = Set()
   private var suspected: Set[WorkerEntry] = Set()
-  private var delay : FiniteDuration =  timeout
+  private var delay: FiniteDuration = timeout
   private val formatter = new DecimalFormat("#.#######################################")
-  private var responseData : Map[Integer, Double] = Map()
+  private var responseData: Map[Integer, Double] = Map()
   init(workers)
 
   /*
@@ -47,22 +47,21 @@ class EPFD(workers: List[WorkerEntry], delta : FiniteDuration, collector: ActorR
     val timeStamp = System.currentTimeMillis().toDouble
     collector ! new NumberOfSuspectedNode(List(formatter.format(timeStamp), suspected.size.toString))
     workers.map((worker: WorkerEntry) => {
-      if((timeStamp - responseData(worker.workerId)) < delay.toMillis.toDouble)
+      if ((timeStamp - responseData(worker.workerId)) < delay.toMillis.toDouble)
         alive = alive + worker
     })
     println("Suspected nodes: " + suspected.size)
-    if((alive & suspected).size != 0){
+    if ((alive & suspected).size != 0) {
       println("Detected premature crash of : " + (alive & suspected).size + " nodes, increasing timeout with delta: " + delta)
       delay = (delay.toMillis + delta.toMillis).millis
       println("New timeout value is: " + delay.toSeconds + " seconds")
     }
     all.map((worker: WorkerEntry) => {
-      if(!alive.contains(worker) && !suspected.contains(worker)){
+      if (!alive.contains(worker) && !suspected.contains(worker)) {
         println("Detected crash of node: " + worker.workerId)
         collector ! new Suspicion(List(worker.workerId.toString, formatter.format(timeStamp)))
         suspected = suspected + worker
-      }
-      else if(alive.contains(worker) && suspected.contains(worker)){
+      } else if (alive.contains(worker) && suspected.contains(worker)) {
         //println("Got reply from a suspected node, : " + worker.workerId + ", restoring it")
         suspected = suspected - worker
       }

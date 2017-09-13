@@ -10,8 +10,7 @@ import kth.se.ii2202.mlfd_prototype.fds._
 /*
  * Superviser, this actor will monitor a set of workers with a failure detector
  */
-class Superviser(fd : FD, timeout: FiniteDuration) extends Actor with ActorLogging with Timers {
-
+class Superviser(fd: FD, timeout: FiniteDuration) extends Actor with ActorLogging with Timers {
 
   /*
    * Setup timer to send heartbeats to all workers every timeout
@@ -31,10 +30,10 @@ class Superviser(fd : FD, timeout: FiniteDuration) extends Actor with ActorLoggi
   def receive = {
     case FDTimeout => {
       val workers = fd.timeout()
-      workers.map((worker : WorkerEntry) => worker.actorRef ! HeartBeat)
+      workers.map((worker: WorkerEntry) => worker.actorRef ! HeartBeat)
       timers.startSingleTimer(FDTimerKey, FDTimeout, timeout)
     }
-    case hbReply : HeartBeatReply => {
+    case hbReply: HeartBeatReply => {
       fd.receivedReply(hbReply, sender)
     }
   }

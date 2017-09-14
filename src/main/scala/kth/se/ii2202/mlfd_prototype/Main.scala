@@ -292,7 +292,7 @@ object Main {
   def recordGeoDistribution(locationsCount: Integer, workersCount: Integer, rand: Boolean,
     geoFactor: Double, collector: ActorRef): List[Double] = {
     val loc = locations(locationsCount, workersCount)
-    loc.map((l: Double) => {
+    loc.sorted.map((l: Double) => {
       var geoDelay = scala.math.pow(l, 3) * geoFactor
       if (rand) {
         val gl = random.nextInt(locationsCount)
@@ -308,7 +308,7 @@ object Main {
    */
   def recordBwDistribution(bandwidthsCount: Integer, workersCount: Integer, rand: Boolean, bandwidthFactor: Double, collector: ActorRef): List[Double] = {
     val bws = bandwidths(bandwidthsCount, workersCount)
-    bws.map((bw: Double) => {
+    bws.sorted.map((bw: Double) => {
       var bandwidthDelay = 1 * bandwidthFactor
       if (bw > 0)
         bandwidthDelay = ((1 / (scala.math.pow(bw, 3))) * bandwidthFactor)
@@ -330,7 +330,7 @@ object Main {
   def recordStdevDistribution(stdDevCount: Integer, workersCount: Integer, rand: Boolean,
     stdevFactor: Double, collector: ActorRef): List[Double] = {
     val stddev = standardDevs(stdDevCount, workersCount, stdevFactor)
-    stddev.map((stddev: Double) => collector ! new Stdev(List(stddev.toString)))
+    stddev.sorted.map((stddev: Double) => collector ! new Stdev(List(stddev.toString)))
     return stddev
   }
 }

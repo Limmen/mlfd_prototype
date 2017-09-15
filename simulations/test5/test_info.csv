@@ -2,3 +2,6 @@ test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,ge
 mlfd_test,100,20,200,3000.0,2 seconds,30,50.0,0.001,nil,1000.0,30,1000.0,100,1.0E-10,0.3,10,0.01,3.0,100.0,true,false,52821.433333333334,0.1388888888888889
 mlfd_test,100,20,200,3000.0,2 seconds,30,50.0,0.001,nil,1000.0,30,1000.0,100,1.0E-10,0.3,10,0.01,3.0,100.0,false,false,39835.934426229505,0.14277777777777778
 mlfd_test,100,20,200,3000.0,2 seconds,30,50.0,0.001,nil,1000.0,30,1000.0,100,1.0E-10,0.3,10,0.01,3.0,100.0,true,true,39625.21666666667,0.6288888888888889
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,115577.85,0.10222222222222223
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,false,false,94771.4,0.10055555555555555
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,false,true,126350.63333333333,0.1111111111111111

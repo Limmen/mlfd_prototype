@@ -16,7 +16,7 @@
 ```
 #MLFD Example:
 
-$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 10 --pmargin 3 --geof 10.0 --geoc 50 --bwf 10000 --bwc 50 --pattern --rand --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30 --samplew 200 --defaultmean 3000 --defaultsdev 1000 --learnrate 0.0000000001 --regp 0.3 --iter 10 --batchsize 100
+$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 10 --pmargin 3 --geof 10.0 --geoc 50 --bwf 10000 --bwc 50 --pattern --rand --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30 --samplew 200 --defaultmean 3000 --defaultsdev 1000 --learnrate 0.0000000001 --regp 0.3 --iter 10 --batchsize 100 --distri 1
 
 #EPFD Example:
 
@@ -43,13 +43,14 @@ $SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/
 | --sdevc        | [Int], Number of standard-deviation classes to distribute nodes over [REQUIRED]                                               |
 | --hbtimeout    | [Double], Number of seconds between each heartbeat timeout [REQUIRED]                                                         |
 | --testdur      | [Double], Number of minutes to run the simulation before termination [REQUIRED]                                               |
-| --samplew      | [Int], Size of sample-window used by MLFD to estimate mean and standard deviation. [REQUIREpD WHEN USING MLFD]                 |
+| --samplew      | [Int], Size of sample-window used by MLFD to estimate mean and standard deviation. [REQUIREpD WHEN USING MLFD]                |
 | --defaultmean  | [Double], Default mean to use for prediction before any samples are collected. [REQUIRED WHEN USING MLFD]                     |
 | --defaultsdev  | [Double], Default standard deviation to use for prediction before any samples are collected [REQUIRED WHEN USING MLFD]        |
 | --learnrate    | [Double], Learning-rate used by MLFD LinearRegressionWithSGD model. [REQUIRED WHEN USING MLFD]                                |
 | --regp         | [Double], Regularization parameter used by MLFD LinearRegressionWithSGD model. [REQUIRED WHEN USING MLFD]                     |
 | --iter         | [Int], Number of iterations used by MLFD LinearRegressionWithSGD model for each training-batch. [REQUIRED WHEN USING MLFD]    |
 | --batchsize    | [Int], Training batch size used by MLFD LinearRegressionWithSGD model. [REQUIRED WHEN USING MLFD]                             |
+| --distr        | [Int], Determines RTT delay distribution, 1=exponential,2=weibull,3=gaussian  [REQUIRED]                                      |
 
 Data and statistics from simulation is written to csv files in `data/stats/`.
 

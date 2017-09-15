@@ -2,6 +2,8 @@ package kth.se.ii2202.mlfd_prototype.actors
 
 import java.text.DecimalFormat
 import kth.se.ii2202.mlfd_prototype.actors.DataCollector.NodeDied
+import org.apache.commons.math3.distribution.{ ExponentialDistribution, NormalDistribution, WeibullDistribution }
+import org.apache.commons.math3.random.JDKRandomGenerator
 import scala.concurrent.duration._
 
 import Superviser._
@@ -14,19 +16,42 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
   messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double, rand: Boolean,
-  bandwidthCount: Integer, geoCount: Integer)
+  bandwidthCount: Integer, geoCount: Integer, distri: Int)
   extends Actor with ActorLogging with Timers {
 
-  private val random = new scala.util.Random(id) //Seed with nodeID
   private val formatter = new DecimalFormat("#.#######################################")
+  private val random =  new JDKRandomGenerator()
   private var bw: Double = bandwidth
   private var loc: Double = geoLoc
+  private var expD : ExponentialDistribution = null
+  private var weibullD : WeibullDistribution = null
+  private var normalD: NormalDistribution = null
 
+  /*
+   * Initialize RTT random distributions
+   */
   override def preStart(): Unit = {
+    random.setSeed(id)
     log.debug(s"Worker $id, geo-location: $geoLoc, bandwidth: $bandwidth started")
     if (!pattern) {
       bw = altBw
       loc = altGeo
+    }
+    distri match {
+      case 1 => {
+        val mean = getGeoDelay + getBandwidthDelay
+        expD = new ExponentialDistribution(random, mean)
+      }
+      case 2 => {
+        val mean = getGeoDelay + getBandwidthDelay
+        var shape = 1.5
+        val scale = stdDev
+        weibullD = new WeibullDistribution(random, shape, scale)
+      }
+      case 3 => {
+        val mean = getGeoDelay + getBandwidthDelay
+        normalD = new NormalDistribution(random, mean, stdDev)
+      }
     }
   }
 
@@ -53,25 +78,49 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   }
 
   /*
-   * Get simulatd delay based on randomness and geo-location
+   * Get simulated delay based on randomness and geo-location
    */
   def getDelay(): FiniteDuration = {
-    var geoDelay = (loc * loc * loc) * geoFactor
+    val geoDelay = getGeoDelay
+    val bandwidthDelay = getBandwidthDelay
+    return distri match{
+      case 1 => expD.sample().millis
+      case 2 => {
+        val sample = weibullD.sample()
+        val truncatedSample = (sample % 0.0000001)
+        (geoDelay + bandwidthDelay + truncatedSample).millis
+      }
+      case 3 => normalD.sample().millis
+    }
+  }
+
+  /*
+   * Calculates delay based on bandwidth
+   */
+  def getBandwidthDelay() : Double = {
     var bandwidthDelay = 1 * bandwidthFactor
     if (bw > 0)
-      bandwidthDelay = (1 / (scala.math.pow(bw, 3)) * bandwidthFactor)
-
+      bandwidthDelay = (1 / bw * bandwidthFactor)
     if (rand) {
-      val gl = random.nextInt(geoCount)
-      geoDelay = (scala.math.pow(gl.toDouble, 3) * random.nextInt(geoFactor.toInt)).toDouble
       val bf = random.nextInt(bandwidthFactor.toInt)
       val b = random.nextInt(bandwidthCount)
       bandwidthDelay = (1 * bf).toDouble
       if (b > 0)
-        bandwidthDelay = ((1 / scala.math.pow(b.toDouble, 3)) * bf).toDouble
+        bandwidthDelay = ((1 / b) * bf).toDouble
     }
+    return bandwidthDelay
+  }
 
-    return ((random.nextGaussian() * stdDev) + geoDelay + bandwidthDelay).millis
+  /*
+   * Calculates delay based on geographic location
+   */
+  def getGeoDelay() : Double = {
+    var geoDelay = loc * geoFactor
+    if (rand) {
+      val gl = random.nextInt(geoCount)
+      geoDelay = (gl * random.nextInt(geoFactor.toInt)).toDouble
+    }
+    return geoDelay
   }
 
   /*
@@ -87,6 +136,16 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   def messageLoss(): Boolean = {
     return random.nextDouble() <= messageLossProb
   }
+
+  def weibullD(shape : Double, scale: Double): Double = {
+    val weibullD : WeibullDistribution = new WeibullDistribution(shape, scale);
+    return weibullD.sample()
+  }
+
+  def exponentialD(mean : Double): Double = {
+    val expD = new ExponentialDistribution(mean)
+    return expD.sample()
+  }
 }
 
 /*
@@ -96,10 +155,10 @@ object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
     messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
-    rand: Boolean, bandwidthCount: Integer, geoCount: Integer): Props = {
+    rand: Boolean, bandwidthCount: Integer, geoCount: Integer, distri: Integer): Props = {
     Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth,
       bandwidthFactor, messageLossProb, pattern, altGeo, altBw, rand, bandwidthCount,
-    geoCount))
+    geoCount, distri))
   }
 
   /*

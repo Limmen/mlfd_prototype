@@ -22,6 +22,7 @@ lazy val root = (project in file(".")).
       sl4jApi,
       sl4jSimple,
       scalaCsv,
-      scallop
+      scallop,
+      commonsMath
     )
   )

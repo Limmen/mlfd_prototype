@@ -37,7 +37,6 @@ $SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/
 | --bwf          | [Double], Factor to multiply each class of bandwidth to get bandwidth delay [REQUIRED]                                        |
 | --bwc          | [Int], Number of bandwidth classes to distribute nodes over [REQUIRED]                                                        |
 | --pattern      | [Boolean flag, no argument], indicates whether there should be a correlation between location, bandwidth and RTT [REQUIRED]   |
-| --rand         | [Boolean flag, no argument], indicates whether geographic and bandwidth delay should be random instead of constant [REQUIRED] |
 | --delta        | [Boolean] Milliseconds to increase timeout of EPFD [REQUIRED WHEN USING EPFD]                                                 |
 | --workers      | [Int], Number of processes to detect failures of. [REQUIRED]                                                                  |
 | --sdevc        | [Int], Number of standard-deviation classes to distribute nodes over [REQUIRED]                                               |

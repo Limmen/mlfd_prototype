@@ -15,7 +15,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
  */
 class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
-  messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double, rand: Boolean,
+  messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
   bandwidthCount: Integer, geoCount: Integer, distri: Int)
   extends Actor with ActorLogging with Timers {
 
@@ -90,7 +90,9 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
         val truncatedSample = (sample % 0.0000001)
         (geoDelay + bandwidthDelay + truncatedSample).millis
       }
-      case 3 => normalD.sample().millis
+      case 3 => {
+        normalD.sample().millis
+      }
     }
   }
 
@@ -101,13 +103,6 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     var bandwidthDelay = 1 * bandwidthFactor
     if (bw > 0)
       bandwidthDelay = (1 / bw * bandwidthFactor)
-    if (rand) {
-      val bf = random.nextInt(bandwidthFactor.toInt)
-      val b = random.nextInt(bandwidthCount)
-      bandwidthDelay = (1 * bf).toDouble
-      if (b > 0)
-        bandwidthDelay = ((1 / b) * bf).toDouble
-    }
     return bandwidthDelay
   }
 
@@ -116,10 +111,6 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
    */
   def getGeoDelay() : Double = {
     var geoDelay = loc * geoFactor
-    if (rand) {
-      val gl = random.nextInt(geoCount)
-      geoDelay = (gl * random.nextInt(geoFactor.toInt)).toDouble
-    }
     return geoDelay
   }
 
@@ -155,9 +146,9 @@ object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
     messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
-    rand: Boolean, bandwidthCount: Integer, geoCount: Integer, distri: Integer): Props = {
+    bandwidthCount: Integer, geoCount: Integer, distri: Integer): Props = {
     Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth,
-      bandwidthFactor, messageLossProb, pattern, altGeo, altBw, rand, bandwidthCount,
+      bandwidthFactor, messageLossProb, pattern, altGeo, altBw, bandwidthCount,
     geoCount, distri))
   }
 

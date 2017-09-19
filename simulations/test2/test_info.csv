@@ -1,7 +1,7 @@
-test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,stdevFactor,pattern,rand,averageDetectiontime,mistakeRate
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,100,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,2380.6071428571427,1.09
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,500,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,17057.88888888889,0.495
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,1000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,29476.37037037037,0.3433333333333333
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,2000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,47356.0,0.23333333333333334
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,5000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,80349.18518518518,0.435
-epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,10000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,false,104067.0,0.6066666666666667
+test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,stdevFactor,pattern,distribution,averageDetectiontime,mistakeRate
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,100,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,2380.6071428571427,1.09
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,500,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,17057.88888888889,0.495
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,1000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,29476.37037037037,0.3433333333333333
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,2000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,47356.0,0.23333333333333334
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,5000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,80349.18518518518,0.435
+epfd_test,100,20,nil,nil,2 seconds,30,50.0,0.001,10000,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,104067.0,0.6066666666666667

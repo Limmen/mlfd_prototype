@@ -20,7 +20,7 @@ class WorkerSpec() extends TestKit(ActorSystem("WorkerSpec"))
 
     "A Worker with 0% crash" must {
       "respond to a HeartBeat with a reply" in {
-      val worker = TestActorRef(new Worker(id=1, geoLoc=1, stdDev=1, geoFactor=0, crashProb=0, collector = self, bandwidth=1, bandwidthFactor=0, messageLossProb=0, pattern=true, 0, 1, false, 1, 1, 3))
+      val worker = TestActorRef(new Worker(id=1, geoLoc=1, stdDev=1, geoFactor=0, crashProb=0, collector = self, bandwidth=1, bandwidthFactor=0, messageLossProb=0, pattern=true, 0, 1, 1, 1, 3))
       worker ! HeartBeat
       expectMsg(HeartBeatReply(1,1,1))
     }

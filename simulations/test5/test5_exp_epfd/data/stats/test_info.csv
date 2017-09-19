@@ -1,0 +1,2 @@
+test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,stdevFactor,pattern,distribution,averageDetectiontime,mistakeRate
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,1,64341.70491803279,0.06333333333333334

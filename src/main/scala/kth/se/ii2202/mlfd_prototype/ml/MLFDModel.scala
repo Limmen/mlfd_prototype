@@ -17,17 +17,19 @@ import org.apache.spark.streaming.{ Seconds, StreamingContext, Time }
 /*
  * ML-model for predicting next timeout for a process based on RTT-samples and geo-location.
  * Uses LinearRegressionWithSGD to continously update model with new streaming data
+ * - batchSize: How much data to move at once to the training-folder
+ * - learningRate: learningRate of streaminglinearregressionwithsgd
+ * - regParam: regParam of streaminglinearregressionwithsgd
  */
-class MLFDModel {
+class MLFDModel(batchSize : Integer, learningRate : Double, regParam: Double, numIterations : Integer) {
 
   private val log = LogManager.getRootLogger
-  private val numFeatures = 2
+  private val numFeatures = 6
   private val trainDataPath = "data/train/" //Folder where SparkStreaming will listen for new training data
   private val tempDataFile = "data/temp/temp.txt" //write individual records to temp file before moving to training folder
   private val testDataPath = "data/test/"
   private val testResultsFilePath = "data/stats/testresults.csv"
   private val testResultsFile = new File(testResultsFilePath)
-  private val batchSize = 100 //How much data to move at once to the training-folder
   private var batchCounter = 0
   private var (model, conf, streamContext) : (StreamingLinearRegressionWithSGD, SparkConf, StreamingContext) = init()
   private val formatter = new DecimalFormat("#.#######################################")
@@ -63,7 +65,7 @@ class MLFDModel {
     testResultsWriter.close()
 
     //Initialize model (lazy) for linear-regression with SGD that will be updated with new streaming data peridocially
-    model = new StreamingLinearRegressionWithSGD().setInitialWeights(Vectors.zeros(numFeatures)).setRegParam(0.3).setStepSize(0.00000001).setNumIterations(10)
+    model = new StreamingLinearRegressionWithSGD().setInitialWeights(Vectors.zeros(numFeatures)).setRegParam(regParam).setStepSize(learningRate).setNumIterations(numIterations)
 
     //Specify that the model should be update by batches (1sec) of training data from given stream
     model.trainOn(trainingData)
@@ -87,6 +89,7 @@ class MLFDModel {
     } else {
       batchCounter = 0
       FileUtils.cleanDirectory(new File(trainDataPath))
+      FileUtils.cleanDirectory(new File(testDataPath))
       val fileName = System.currentTimeMillis().toString()
       val tempFile = new File(tempDataFile).toPath
       val newTestDataFile = new File(testDataPath + "/" + fileName).toPath
@@ -121,10 +124,10 @@ class MLFDModel {
   /*
    * Predict next timeout of process based on mean and geo-location by using the current trained model
    */
-  def predict(mean: Double, geoLoc: Integer): Double = {
+  def predict(mean: Double, sdev: Double, geoLoc: Double, min: Double, max: Double, bandwidth: Double): Double = {
     val linearModel: LinearRegressionModel = model.latestModel()
     log.debug("Model Weights: " + linearModel.weights)
-    return linearModel.predict(Vectors.dense(mean, geoLoc.toDouble))
+    return linearModel.predict(Vectors.dense(mean, sdev, geoLoc, min, max, bandwidth))
   }
 
 }

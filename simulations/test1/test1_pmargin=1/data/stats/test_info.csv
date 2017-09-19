@@ -1,0 +1,2 @@
+test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,stdevFactor,pattern,distribution,averageDetectiontime,mistakeRate
+mlfd_test,100,20,200,3000.0,2 seconds,30,1000.0,0.001,nil,1000.0,30,1000.0,100,1.0E-10,0.3,10,0.01,1.0,100.0,true,3,6226.416666666667,2.595

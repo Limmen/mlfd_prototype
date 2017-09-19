@@ -1,0 +1,6 @@
+test,workersCount,locationsCount,sampleSize,defaultMean,hbTimeout,stdDevCount,geoFactor,crashProb,delta,defaultStd,bandwidthCount,bandwidthFactor,batchSize,learningRate,regParam,numIterations,messageLossProb,stdevMargin,stdevFactor,pattern,rand,averageDetectiontime,mistakeRate
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.001,nil,100.0,true,3,21139.91379310345,0.051111111111111114
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.01,nil,100.0,true,3,20930.96551724138,0.051111111111111114
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.1,nil,100.0,true,3,20630.22950819672,0.051666666666666666
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.5,nil,100.0,true,3,27895.190476190477,0.058333333333333334
+epfd_test,100,20,nil,nil,2 seconds,30,1000.0,0.001,2 seconds,nil,30,1000.0,nil,nil,nil,nil,0.75,nil,100.0,true,3,48049.147540983606,0.06333333333333334

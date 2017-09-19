@@ -18,14 +18,14 @@ import kth.se.ii2202.mlfd_prototype.actors.DataCollector._
  * - Lus Rodrigues
  *
  */
-class EPFD(workers: List[WorkerEntry], delta : FiniteDuration, collector: ActorRef) extends FD {
+class EPFD(workers: List[WorkerEntry], delta: FiniteDuration, collector: ActorRef, timeout: FiniteDuration) extends FD {
 
   private var all: Set[WorkerEntry] = Set()
   private var alive: Set[WorkerEntry] = Set()
   private var suspected: Set[WorkerEntry] = Set()
-  private var delay : FiniteDuration =  delta
+  private var delay: FiniteDuration = timeout
   private val formatter = new DecimalFormat("#.#######################################")
-
+  private var responseData: Map[Integer, Double] = Map()
   init(workers)
 
   /*
@@ -35,43 +35,50 @@ class EPFD(workers: List[WorkerEntry], delta : FiniteDuration, collector: ActorR
     println("EPFD started")
     alive = alive ++ workers
     all = all ++ workers
+    val timestamp = System.currentTimeMillis().toDouble
+    workers.map((worker: WorkerEntry) => responseData += (worker.workerId -> timestamp))
   }
 
   /*
    * Handle timeout, check if all alive nodes have responded, otherwise suspect them.
    * If a suspected node responded, restore it and increase timeout
    */
-  def timeout(): (Set[WorkerEntry], FiniteDuration) = {
+  def timeout(): Set[WorkerEntry] = {
     val timeStamp = System.currentTimeMillis().toDouble
-    println("Suspected nodes: " + suspected.size)
     collector ! new NumberOfSuspectedNode(List(formatter.format(timeStamp), suspected.size.toString))
-    if((alive & suspected).size != 0){
+    workers.map((worker: WorkerEntry) => {
+      if ((timeStamp - responseData(worker.workerId)) < delay.toMillis.toDouble)
+        alive = alive + worker
+    })
+    println("Suspected nodes: " + suspected.size)
+    if ((alive & suspected).size != 0) {
       println("Detected premature crash of : " + (alive & suspected).size + " nodes, increasing timeout with delta: " + delta)
       delay = (delay.toMillis + delta.toMillis).millis
       println("New timeout value is: " + delay.toSeconds + " seconds")
     }
     all.map((worker: WorkerEntry) => {
-      if(!alive.contains(worker) && !suspected.contains(worker)){
+      if (!alive.contains(worker) && !suspected.contains(worker)) {
         println("Detected crash of node: " + worker.workerId)
         collector ! new Suspicion(List(worker.workerId.toString, formatter.format(timeStamp)))
         suspected = suspected + worker
-      }
-      else if(alive.contains(worker) && suspected.contains(worker)){
+      } else if (alive.contains(worker) && suspected.contains(worker)) {
         //println("Got reply from a suspected node, : " + worker.workerId + ", restoring it")
         suspected = suspected - worker
       }
     })
     alive = Set()
-    return (all, delay)
+    return all
   }
 
   /*
    * Received reply from worker, record this in the FD state.
    */
   def receivedReply(hbReply: HeartBeatReply, sender: ActorRef): Unit = {
+    val timeStamp = System.currentTimeMillis().toDouble
     searchSetByRef(all, sender) match {
       case Some(worker) => {
         alive = alive + worker
+        responseData += (worker.workerId -> timeStamp)
       }
       case None => println("Received heartbeat from worker not supervised")
     }

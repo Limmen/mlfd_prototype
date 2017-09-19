@@ -3,14 +3,13 @@ package kth.se.ii2202.mlfd_prototype.fds
 import akka.actor.ActorRef
 import kth.se.ii2202.mlfd_prototype.actors.Superviser.WorkerEntry
 import kth.se.ii2202.mlfd_prototype.actors.Worker.HeartBeatReply
-import scala.concurrent.duration.FiniteDuration
 
 /*
  * FailureDetector trait, all FDs should extend this for easy testing
  */
 trait FD {
 
-  def timeout(): (Set[WorkerEntry], FiniteDuration)
+  def timeout(): Set[WorkerEntry]
   def receivedReply(reply: HeartBeatReply, sender: ActorRef): Unit
 
   def searchSetByRef(workerSet: Set[WorkerEntry], ref: ActorRef): Option[WorkerEntry] = {

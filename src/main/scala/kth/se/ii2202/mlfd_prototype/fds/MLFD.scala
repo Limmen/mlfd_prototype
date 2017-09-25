@@ -179,4 +179,8 @@ class MLFD(workers: List[WorkerEntry], sampleWindowSize: Integer, defaultMean: D
     else
       return responseData(workerId).max
   }
+
+  def workers() : Set[WorkerEntry] = {
+    return workers.toSet
+  }
 }

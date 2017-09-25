@@ -47,6 +47,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 object Main {
 
   val random = new scala.util.Random(1000)
+  val warmup = 5
   /*
    * Start Akka system and start simulations/tests
    */
@@ -183,7 +184,7 @@ object Main {
       collector = collector, defaultStd = defaultStd, batchSize = batchSize, learningRate = learningRate,
       regParam = regParam, numIterations = numIterations, stdevMargin = stdevMargin)
 
-    val superviser = system.actorOf(Superviser.props(mlfd, hbTimeout), "superviser")
+    val superviser = system.actorOf(Superviser.props(mlfd, hbTimeout, warmup=warmup), "superviser")
 
     system.actorOf(Controller.props(system, testTimeout, List("mlfd_test", workersCount.toString(),
       locationsCount.toString(), sampleSize.toString(), defaultMean.toString(), hbTimeout.toString(),
@@ -232,7 +233,7 @@ object Main {
 
     val epfd = new EPFD(workers, delta, collector, hbTimeout)
 
-    val superviser = system.actorOf(Superviser.props(epfd, hbTimeout), "superviser")
+    val superviser = system.actorOf(Superviser.props(epfd, hbTimeout, warmup=warmup), "superviser")
 
     system.actorOf(Controller.props(system, testTimeout, List("epfd_test", workersCount.toString(),
       locationsCount.toString, "nil", "nil", hbTimeout.toString(), stdDevCount.toString(),
@@ -249,7 +250,7 @@ object Main {
     messageLossProb: Double, pattern: Boolean, altGeo: List[Double],
     altBw: List[Double], bandwidthCount: Integer, geoCount: Integer, distr : Integer): List[WorkerEntry] = {
     return (1 to n).toList.map((i) => {
-      val actorRef = system.actorOf(Worker.props(id = i, geoLoc = locations(i - 1), stdDev = stdDevs(i - 1), geoFactor = geoFactor, crashProb = crashProb, collector = collector, bandwidth = bandwidths(i - 1), bandwidthFactor = bandwidthFactor, messageLossProb = messageLossProb, pattern = pattern, altGeo = altGeo(i - 1), altBw = altBw(i - 1), bandwidthCount = bandwidthCount, geoCount = geoCount, distri=distr), i.toString)
+      val actorRef = system.actorOf(Worker.props(id = i, geoLoc = locations(i - 1), stdDev = stdDevs(i - 1), geoFactor = geoFactor, crashProb = crashProb, collector = collector, bandwidth = bandwidths(i - 1), bandwidthFactor = bandwidthFactor, messageLossProb = messageLossProb, pattern = pattern, altGeo = altGeo(i - 1), altBw = altBw(i - 1), bandwidthCount = bandwidthCount, geoCount = geoCount, distri=distr, warmup=warmup), i.toString)
       new WorkerEntry(actorRef, i, locations(i - 1), bandwidths(i - 1))
     })
   }

@@ -83,4 +83,8 @@ class EPFD(workers: List[WorkerEntry], delta: FiniteDuration, collector: ActorRe
       case None => println("Received heartbeat from worker not supervised")
     }
   }
+
+  def workers() : Set[WorkerEntry] = {
+    return workers.toSet
+  }
 }

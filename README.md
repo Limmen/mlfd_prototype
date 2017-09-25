@@ -13,14 +13,14 @@
 2. **Build fat jar**
    - `$ sbt assembly`
 3. **Run as spark-job**
+
+**MLFD Example**
 ```
-#MLFD Example:
-
-$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 10 --pmargin 3 --geof 10.0 --geoc 50 --bwf 10000 --bwc 50 --pattern --rand --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30 --samplew 200 --defaultmean 3000 --defaultsdev 1000 --learnrate 0.0000000001 --regp 0.3 --iter 10 --batchsize 100 --distri 1
-
-#EPFD Example:
-
-$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 10 --delta 500 --geof 10.0 --geoc 50 --bwf 10000 --bwc 50 --pattern --rand --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30
+$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 1 --crash 0.001 --mloss 0.01 --sdev 100 --pmargin 3 --geof 1000.0 --geoc 20 --bwf 1000 --bwc 30 --pattern --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30 --samplew 200 --defaultmean 3000 --defaultsdev 1000 --learnrate 0.0000000001 --regp 0.3 --iter 10 --batchsize 100 --distr 3
+```
+**EPFD Example**
+```
+$SPARK_HOME/bin/spark-submit --class "kth.se.ii2202.mlfd_prototype.Main" target/scala-2.11/mlfd_prototype-assembly-0.1.0-SNAPSHOT.jar --test 2 --crash 0.001 --mloss 0.01 --sdev 100 --delta 2000 --geof 1000.0 --geoc 20 --bwf 1000 --bwc 30 --pattern --workers 100 --sdevc 30 --hbtimeout 2 --testdur 30 --distr 3
 ```
 
 ## Simulation parameters

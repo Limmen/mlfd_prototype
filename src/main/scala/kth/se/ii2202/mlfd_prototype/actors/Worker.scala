@@ -16,7 +16,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props, Timers}
 class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
   messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
-  bandwidthCount: Integer, geoCount: Integer, distri: Int)
+  bandwidthCount: Integer, geoCount: Integer, distri: Int, warmup: Int)
   extends Actor with ActorLogging with Timers {
 
   private val formatter = new DecimalFormat("#.#######################################")
@@ -26,6 +26,7 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   private var expD : ExponentialDistribution = null
   private var weibullD : WeibullDistribution = null
   private var normalD: NormalDistribution = null
+  private var warmupCount = 0
 
   /*
    * Initialize RTT random distributions
@@ -62,18 +63,23 @@ class Worker(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
   def receive = {
     case HeartBeat => {
       log.debug("Worker received heartbeat")
+      if(warmupCount >= warmup) {
+        if (!messageLoss()) {
+        if (!timers.isTimerActive(ReplyDelayTimeoutKey))
+          timers.startSingleTimer(ReplyDelayTimeoutKey, ReplyDelayTimeout(sender), getDelay)
+        }
+      } else {
+        warmupCount = warmupCount + 1
+      }
+    }
+    case ReplyDelayTimeout(from) => {
+      from ! new HeartBeatReply(id, geoLoc, bandwidth)
       if (crash()) {
         val timeStamp = System.currentTimeMillis().toDouble
         collector ! new NodeDied(List(id.toString(), formatter.format(timeStamp)))
         context.stop(self)
         log.info("worker: " + id + "crashed")
-      } else if (!messageLoss()) {
-        if (!timers.isTimerActive(ReplyDelayTimeoutKey))
-          timers.startSingleTimer(ReplyDelayTimeoutKey, ReplyDelayTimeout(sender), getDelay)
       }
-    }
-    case ReplyDelayTimeout(from) => {
-      from ! new HeartBeatReply(id, geoLoc, bandwidth)
     }
   }
 
@@ -146,10 +152,10 @@ object Worker {
   def props(id: Integer, geoLoc: Double, stdDev: Double, geoFactor: Double,
     crashProb: Double, collector: ActorRef, bandwidth: Double, bandwidthFactor: Double,
     messageLossProb: Double, pattern: Boolean, altGeo: Double, altBw: Double,
-    bandwidthCount: Integer, geoCount: Integer, distri: Integer): Props = {
+    bandwidthCount: Integer, geoCount: Integer, distri: Integer, warmup: Integer): Props = {
     Props(new Worker(id, geoLoc, stdDev, geoFactor, crashProb, collector, bandwidth,
       bandwidthFactor, messageLossProb, pattern, altGeo, altBw, bandwidthCount,
-    geoCount, distri))
+    geoCount, distri, warmup))
   }
 
   /*

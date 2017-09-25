@@ -10,7 +10,9 @@ import kth.se.ii2202.mlfd_prototype.fds._
 /*
  * Superviser, this actor will monitor a set of workers with a failure detector
  */
-class Superviser(fd: FD, timeout: FiniteDuration) extends Actor with ActorLogging with Timers {
+class Superviser(fd: FD, timeout: FiniteDuration, warmup: Int) extends Actor with ActorLogging with Timers {
+
+  private var warmupCount = 0
 
   /*
    * Setup timer to send heartbeats to all workers every timeout
@@ -29,12 +31,21 @@ class Superviser(fd: FD, timeout: FiniteDuration) extends Actor with ActorLoggin
    */
   def receive = {
     case FDTimeout => {
-      val workers = fd.timeout()
+      var workers : Set[WorkerEntry] = Set.empty
+      if(warmupCount >= warmup){
+        workers = fd.timeout()
+      } else {
+        log.info("warmup..")
+        warmupCount = warmupCount + 1
+        workers = fd.workers()
+      }
       workers.map((worker: WorkerEntry) => worker.actorRef ! HeartBeat)
       timers.startSingleTimer(FDTimerKey, FDTimeout, timeout)
     }
     case hbReply: HeartBeatReply => {
-      fd.receivedReply(hbReply, sender)
+      if(warmupCount >= warmup){
+        fd.receivedReply(hbReply, sender)
+      }
     }
   }
 }
@@ -43,8 +54,8 @@ class Superviser(fd: FD, timeout: FiniteDuration) extends Actor with ActorLoggin
  * Companion object, i.e static fields
  */
 object Superviser {
-  def props(fd: FD, timeout: FiniteDuration): Props = {
-    Props(new Superviser(fd, timeout))
+  def props(fd: FD, timeout: FiniteDuration, warmup: Int): Props = {
+    Props(new Superviser(fd, timeout, warmup))
   }
 
   /*

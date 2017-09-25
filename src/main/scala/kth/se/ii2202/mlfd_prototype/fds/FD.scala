@@ -11,7 +11,7 @@ trait FD {
 
   def timeout(): Set[WorkerEntry]
   def receivedReply(reply: HeartBeatReply, sender: ActorRef): Unit
-
+  def workers() : Set[WorkerEntry]
   def searchSetByRef(workerSet: Set[WorkerEntry], ref: ActorRef): Option[WorkerEntry] = {
     workerSet.map((worker: WorkerEntry) => if (worker.actorRef == ref) return Some(worker))
     return None
